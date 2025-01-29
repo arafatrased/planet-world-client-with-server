@@ -11,6 +11,7 @@ import {
   updateProfile,
 } from 'firebase/auth'
 import { app } from '../firebase/firebase.config'
+import axios from 'axios'
 // import axios from 'axios'
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -55,20 +56,27 @@ const AuthProvider = ({ children }) => {
       console.log('CurrentUser-->', currentUser?.email)
       if (currentUser?.email) {
         setUser(currentUser)
-
+        await axios.post(`${import.meta.env.VITE_API_URL}/users/${currentUser?.email}`,{
+          name: currentUser?.displayName,
+          image: currentUser?.photoURL,
+          email: currentUser?.email
+        })
+        .then(res=>{
+          console.log(res.data)
+        })
         // Get JWT token
-      //   await axios.post(
-      //     `${import.meta.env.VITE_API_URL}/jwt`,
-      //     {
-      //       email: currentUser?.email,
-      //     },
-      //     { withCredentials: true }
-      //   )
-      // } else {
-      //   setUser(currentUser)
-      //   await axios.get(`${import.meta.env.VITE_API_URL}/logout`, {
-      //     withCredentials: true,
-      //   })
+        // await axios.post(
+        //   `${import.meta.env.VITE_API_URL}/jwt`,
+        //   {
+        //     email: currentUser?.email,
+        //   },
+        //   { withCredentials: true }
+        // )
+      } else {
+        setUser(currentUser)
+        await axios.get(`${import.meta.env.VITE_API_URL}/logout`, {
+          withCredentials: true,
+        })
       }
       setLoading(false)
     })

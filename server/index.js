@@ -55,6 +55,25 @@ const client = new MongoClient(uri, {
 })
 async function run() {
   try {
+    const userCollections = client.db('planet-worldDB').collection('users');
+    const plantCollections = client.db('planet-worldDB').collection('plants')
+    
+    
+    // save or update a user in db
+    app.post('/users/:email', async (req, res) => {
+      const email = req.params.email
+      const query = { email }
+      const user = req.body
+      //check if user exists in db
+      const isExist = await userCollections.findOne(query)
+      if (isExist){
+        return res.send(isExist)
+      }
+      const result = userCollections.insertOne({...user, timestamp: Date.now(), role: "customer"})
+      res.send(result)
+    })
+    
+    
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -70,9 +89,11 @@ async function run() {
         .send({ success: true })
     });
 
-    app.get('/', (req, res) =>{
+    app.get('/', (req, res) => {
       res.send('plannet is running')
     })
+    
+    
     // Logout
     app.get('/logout', async (req, res) => {
       try {
@@ -88,6 +109,12 @@ async function run() {
       }
     })
 
+
+    app.post('/plants', async(req, res) =>{
+      const plant = req.body;
+      const result = await plantCollections.insertOne(plant)
+      res.send(result)
+    })
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
     console.log(
