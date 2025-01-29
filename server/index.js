@@ -18,7 +18,14 @@ app.use(cors(corsOptions))
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(morgan('dev'))
+app.use(morgan('dev'));
+
+
+// username: asadzasad1984
+//pass: N9Trj6q4TKcYbNYL
+
+//planetworld
+//0UJHvvoifoT9R92S
 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token
@@ -36,7 +43,7 @@ const verifyToken = async (req, res, next) => {
   })
 }
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mq0mae1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const uri = "mongodb+srv://planetworld:0UJHvvoifoT9R92S@cluster0.7szto.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -61,6 +68,10 @@ async function run() {
           sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
         })
         .send({ success: true })
+    });
+
+    app.get('/', (req, res) =>{
+      res.send('plannet is running')
     })
     // Logout
     app.get('/logout', async (req, res) => {
