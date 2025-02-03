@@ -6,9 +6,74 @@ import {
   DialogPanel,
   DialogTitle,
 } from '@headlessui/react'
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
+import useAuth from '../../hooks/useAuth';
+import Button from '../Shared/Button/Button';
+import toast from 'react-hot-toast'
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-const PurchaseModal = ({ closeModal, isOpen }) => {
+const PurchaseModal = ({ closeModal, isOpen, plant, refetch }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [totalQuantity, setTotalQuantity] = useState(1)
+  const { category, seller, quantity, name, price, _id } = plant;
+  const [totalPrice, setTotalPrice] = useState(price);
+  const [purchaseInfo, setPurchaseInfo] = useState({
+    customer: {
+      name: user?.displayName,
+      email: user?.email,
+      image: user?.photoURL
+    },
+    plantId: _id,
+    price: totalPrice,
+    quantity: totalQuantity,
+    seller: seller?.email,
+    address: '',
+    status: 'Pending'
+  })
+
+
+
+
+  // handle Quantity function
+  const handleQuantity = (value) => {
+
+    if (value > quantity) {
+      return toast.error('Exceeds Available Quantity!')
+    }
+    if (value < 1) {
+      return toast.error('Need to add one or more')
+    }
+    setTotalQuantity(value)
+    setTotalPrice(value * price)
+    setPurchaseInfo(prv => {
+      return { ...prv, quantity: value, price: value * quantity }
+    })
+
+  }
+
+  // Handle Purchase
+  const handlePurchase = async () => {
+    console.log(purchaseInfo)
+    try{
+      await axios.post(`${import.meta.env.VITE_API_URL}/orders`, purchaseInfo)
+      await axios.patch(`${import.meta.env.VITE_API_URL}/plant/quantity/${_id}`,{
+        quantityToUpdate: totalQuantity,
+
+      })
+      toast.success('Order successfull!');
+      refetch();
+      navigate('/dashboard/my-orders')
+    }
+    catch(err){
+      console.log(err)
+    }
+    finally{
+      closeModal()
+    }
+  }
+
   // Total Price Calculation
 
   return (
@@ -45,20 +110,56 @@ const PurchaseModal = ({ closeModal, isOpen }) => {
                   Review Info Before Purchase
                 </DialogTitle>
                 <div className='mt-2'>
-                  <p className='text-sm text-gray-500'>Plant: Money Plant</p>
+                  <p className='text-sm text-gray-500'>Plant: {name}</p>
                 </div>
                 <div className='mt-2'>
-                  <p className='text-sm text-gray-500'>Category: Indoor</p>
+                  <p className='text-sm text-gray-500'>Category: {category}</p>
                 </div>
                 <div className='mt-2'>
-                  <p className='text-sm text-gray-500'>Customer: PH</p>
+                  <p className='text-sm text-gray-500'>Customer: {user?.displayName}</p>
                 </div>
 
                 <div className='mt-2'>
-                  <p className='text-sm text-gray-500'>Price: $ 120</p>
+                  <p className='text-sm text-gray-500'>Price: $ {price}</p>
                 </div>
                 <div className='mt-2'>
-                  <p className='text-sm text-gray-500'>Available Quantity: 5</p>
+                  <p className='text-sm text-gray-500'>Available Quantity: {quantity}</p>
+                </div>
+                {/* quantity section */}
+                <div className='space-y-1 flex gap-2 items-center text-sm pr-6'>
+                  <label htmlFor='quantity' className='block text-gray-600'>
+                    Quantity
+                  </label>
+                  <input
+                    className='px-4 py-3 text-gray-800 border border-lime-300 focus:outline-lime-500 rounded-md bg-white'
+                    name='quantity'
+                    value={totalQuantity}
+                    onChange={(e) => handleQuantity(parseInt(e.target.value))}
+                    id='quantity'
+                    type='number'
+                    placeholder='Quantity'
+                    required
+                  />
+                </div>
+                <div className='space-y-1 flex gap-2 items-center text-sm pr-6'>
+                  <label htmlFor='address' className='block text-gray-600'>
+                    Address
+                  </label>
+                  <input
+                    className='px-4 py-3 text-gray-800 border border-lime-300 focus:outline-lime-500 rounded-md bg-white'
+                    name='address'
+                    id='address'
+                    onChange={(e) => setPurchaseInfo(prv => {
+                      return { ...prv, address: e.target.value }
+                    })}
+                    type='text'
+                    placeholder='Shipping Address'
+                    required
+                  />
+                </div>
+                <div className='mt-6 flex gap-6 justify-between'>
+                  <Button onClick={closeModal} label={'Cancel'}></Button>
+                  <Button onClick={handlePurchase} label={`Pay: ${totalPrice}$`}></Button>
                 </div>
               </DialogPanel>
             </TransitionChild>

@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
+import { TbFidgetSpinner } from 'react-icons/tb';
 
-const AddPlantForm = ({handlePlantSubmit}) => {
+const AddPlantForm = ({ handlePlantSubmit, uploadButtonText, setUploadButtonText, loading }) => {
+  console.log(uploadButtonText)
   return (
     <div className='w-full min-h-[calc(100vh-40px)] flex flex-col justify-center items-center text-gray-800 rounded-xl bg-gray-50'>
       <form onSubmit={handlePlantSubmit}>
@@ -89,6 +91,7 @@ const AddPlantForm = ({handlePlantSubmit}) => {
                 <div className='flex flex-col w-max mx-auto text-center'>
                   <label>
                     <input
+                      onChange={e => setUploadButtonText(e.target.files[0].name)}
                       className='text-sm cursor-pointer w-36 hidden'
                       type='file'
                       name='image'
@@ -97,11 +100,18 @@ const AddPlantForm = ({handlePlantSubmit}) => {
                       hidden
                     />
                     <div className='bg-lime-500 text-white border border-gray-300 rounded font-semibold cursor-pointer p-1 px-3 hover:bg-lime-500'>
-                      Upload
+                      {uploadButtonText}
                     </div>
                   </label>
                 </div>
               </div>
+            </div>
+            <div>
+              {/* {
+                uploadButtonText && uploadButtonText.size (
+                  <img src={URL.createObjectURL(uploadButtonText)} alt="" />
+                )
+              } */}
             </div>
 
             {/* Submit Button */}
@@ -109,7 +119,11 @@ const AddPlantForm = ({handlePlantSubmit}) => {
               type='submit'
               className='w-full p-3 mt-5 text-center font-medium text-white transition duration-200 rounded shadow-md bg-lime-500 '
             >
-              Save & Continue
+              {loading ? (
+                <TbFidgetSpinner className='animate-spin m-auto' />
+              ) : (
+                'Save & Continue'
+              )}
             </button>
           </div>
         </div>
@@ -120,6 +134,9 @@ const AddPlantForm = ({handlePlantSubmit}) => {
 
 AddPlantForm.propTypes = {
   handlePlantSubmit: PropTypes.func.isRequired,
+  uploadButtonText: PropTypes.any,
+  setUploadButtonText: PropTypes.any,
+  loading: PropTypes.any
 };
 
 export default AddPlantForm;

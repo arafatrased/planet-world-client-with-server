@@ -2,11 +2,18 @@ import { Helmet } from 'react-helmet-async'
 import AddPlantForm from '../../../components/Form/AddPlantForm'
 import { imageUpload } from '../../../api/utils'
 import useAuth from '../../../hooks/useAuth'
+import { useState } from 'react'
+import useAxiosSecure from '../../../hooks/useAxiosSecure'
+import toast from 'react-hot-toast';
 
 const AddPlant = () => {
-  const {user} = useAuth()
+  const {user} = useAuth();
+  const axiosSecure = useAxiosSecure()
+  const [uploadButtonText, setUploadButtonText] = useState('Upload Image')
+  const [loading, setLoading] = useState(false)
   const handlePlantSubmit = async e =>{
     e.preventDefault()
+    setLoading(true)
     const form = e.target;
     const name = form.name.value;
     const description = form.description.value;
@@ -30,7 +37,21 @@ const AddPlant = () => {
       image: imageUrl,
       seller
     }
+
+  //Saving data to db
+  try{
+    //posting data to db
+    await axiosSecure.post('/plants', plantData)
+    toast.success('Plant Added Successfully!')
+  }catch (err) {
+    console.log(err)
   }
+  finally{
+    setLoading(false)
+  }
+  
+  }
+
   return (
     <div>
       <Helmet>
@@ -38,7 +59,12 @@ const AddPlant = () => {
       </Helmet>
 
       {/* Form */}
-      <AddPlantForm handlePlantSubmit={handlePlantSubmit}/>
+      <AddPlantForm 
+      uploadButtonText={uploadButtonText} 
+      handlePlantSubmit={handlePlantSubmit}
+      setUploadButtonText={setUploadButtonText}
+      loading={loading}
+      />
     </div>
   )
 }

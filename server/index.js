@@ -57,8 +57,9 @@ async function run() {
   try {
     const userCollections = client.db('planet-worldDB').collection('users');
     const plantCollections = client.db('planet-worldDB').collection('plants')
-    
-    
+    const ordersCollections = client.db('planet-worldDB').collection('orders')
+
+
     // save or update a user in db
     app.post('/users/:email', async (req, res) => {
       const email = req.params.email
@@ -66,14 +67,14 @@ async function run() {
       const user = req.body
       //check if user exists in db
       const isExist = await userCollections.findOne(query)
-      if (isExist){
+      if (isExist) {
         return res.send(isExist)
       }
-      const result = userCollections.insertOne({...user, timestamp: Date.now(), role: "customer"})
+      const result = userCollections.insertOne({ ...user, timestamp: Date.now(), role: "customer" })
       res.send(result)
     })
-    
-    
+
+
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -89,11 +90,69 @@ async function run() {
         .send({ success: true })
     });
 
+    // Getting Plants Data
+    app.get('/plants', async (req, res) => {
+      const result = await plantCollections.find().toArray()
+      res.send(result);
+    })
+
+    app.get('/plants/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await plantCollections.findOne(query)
+      res.send(result);
+    });
+
+    app.get('/customer-orders/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'customer.email': email }
+      console.log(query)
+      const result = await ordersCollections.aggregate([
+        {
+          $match: query
+        },
+        {
+          $addFields: {
+            plantId: { $toObjectId: '$plantId' }
+          }
+        },
+        {
+          $lookup: {
+            from: 'plants',
+            localField: 'plantId',
+            foreignField: '_id',
+            as: 'plants'
+          }
+        },
+        {
+          $unwind: '$plants'
+        },
+        {
+          $addFields: {
+            name: '$plants.name',
+            image: '$plants.image',
+            category: '$plants.category',
+          },
+        },
+        {
+          $project: {
+            plants: 0
+          }
+        }
+      ]).toArray()
+      console.log(result)
+      res.send(result)
+    })
+
+
+
+
+
     app.get('/', (req, res) => {
       res.send('plannet is running')
     })
-    
-    
+
+
     // Logout
     app.get('/logout', async (req, res) => {
       try {
@@ -110,11 +169,53 @@ async function run() {
     })
 
 
-    app.post('/plants', async(req, res) =>{
+    app.post('/plants', async (req, res) => {
       const plant = req.body;
       const result = await plantCollections.insertOne(plant)
+      res.send(result);
+    })
+    //Post Orders
+    app.post('/orders', async (req, res) => {
+      const orderInfo = req.body;
+      const result = await ordersCollections.insertOne(orderInfo)
+      res.send(result);
+    })
+
+    //Manage Quantity
+    app.patch('/plant/quantity/:id', async (req, res) => {
+      const id = req.params.id;
+      const { quantityToUpdate, status } = req.body;
+      const filter = { _id: new ObjectId(id) }
+      let updateDoc = {
+        $inc: {
+          quantity: -quantityToUpdate
+        }
+      }
+      if(status === 'increase'){
+        updateDoc = {
+          $inc: {
+            quantity: quantityToUpdate
+          }
+        }
+      }
+      const result = plantCollections.updateOne(filter, updateDoc);
+      res.send(result)
+
+    });
+
+    app.delete('/orders/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const order = await ordersCollections.findOne(query)
+      if(order.status === 'Delivered'){
+        return res.status(409).send('can not delete when delivered')
+      }
+      const result = await ordersCollections.deleteOne(query);
       res.send(result)
     })
+
+
+
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
     console.log(
